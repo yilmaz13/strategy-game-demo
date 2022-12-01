@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Builds;
 using UnityEngine;
 
 public sealed class ObjectPooler : MonoBehaviour
@@ -22,11 +23,10 @@ public sealed class ObjectPooler : MonoBehaviour
         //singleton pattern
         if (_instance != null && _instance != this)
         {
-            Destroy(this.gameObject);
+            Destroy(gameObject);
         }
 
         _instance = this;
-        DontDestroyOnLoad(this.gameObject);
 
         _SetPool();
         _InstantiatePoolObjects(allPools);
@@ -76,8 +76,8 @@ public sealed class ObjectPooler : MonoBehaviour
 
     #region Public Methods
 
-    private GameObject _Spawn(string poolName, Vector3 position, Quaternion rotation = new Quaternion(),
-        Transform parentTransform = null)
+    public GameObject Spawn(string poolName, Vector3 position, Quaternion rotation = new Quaternion(),
+        Transform parentTransform = null, RectTransform rectTransform = null)
     {
         // Find the pool that matches the pool name:
         for (var i = 0; i < allPools.Count; i++)
@@ -87,11 +87,19 @@ public sealed class ObjectPooler : MonoBehaviour
                 foreach (var poolObj in allPools[i].PooledObjects.Where(poolObj => !poolObj.activeSelf))
                 {
                     poolObj.SetActive(true);
-                    poolObj.transform.localPosition = position;
-                    poolObj.transform.localRotation = rotation;
-                    // Set parent:
-                    if (parentTransform)
-                        poolObj.transform.SetParent(parentTransform, false);
+                    if (rectTransform != null)
+                    {
+                        if (parentTransform)
+                            poolObj.transform.SetParent(parentTransform, false);
+                    }
+                    else
+                    {
+                        poolObj.transform.localPosition = position;
+                        poolObj.transform.localRotation = rotation;
+                        // Set parent:
+                        if (parentTransform)
+                            poolObj.transform.SetParent(parentTransform, false);
+                    }
 
                     poolObj.GetComponent<PoolObject>().PoolSpawn();
 
@@ -116,6 +124,11 @@ public sealed class ObjectPooler : MonoBehaviour
         }
 
         return null;
+    }
+
+    public Build SpawnBuild(string name, Vector3 pos)
+    {
+        return Instance.Spawn(name, pos, new Quaternion(), transform).GetComponent<Build>();
     }
 
     #endregion
